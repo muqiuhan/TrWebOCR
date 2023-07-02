@@ -1,6 +1,7 @@
 import requests
 import os
 import sys
+import re
 
 URL = "http://localhost:8089/api/tr-run/"
 SCREENSHOT_DIR_PATH = sys.argv[1]
@@ -74,9 +75,56 @@ def ocr(img_file_paths: list[str]) -> list[str]:
     for img_file_path in img_file_paths:
         result.append(request_TrWebOCR(img_file_path))
 
-    return map(lambda s: f"{s}\n", result[0])
+    return result[0]
+
+
+class Filter:
+    """对OCR的结果进行微调"""
+
+    @staticmethod
+    def __merge_independ_time_info(chat_history: list[str]) -> list[str]:
+        """合并聊天记录中单独出现的时间信息"""
+        merged_strings = []
+        previous_string = ""
+
+        for history in chat_history:
+            matched = re.search(r"\d{2}:\d{2}", history)
+            if matched and matched.group() == history:
+                previous_string = f"{previous_string}{history}"
+            else:
+                merged_strings.append(previous_string)
+                previous_string = history
+
+        merged_strings.append(previous_string)
+        return merged_strings
+
+    @staticmethod
+    def __remove_empty(chat_history: list[str]) -> list[str]:
+        """删除聊天记录中的空白记录"""
+        return list(filter(lambda history: history, chat_history))
+
+    @staticmethod
+    def __add_new_line(chat_history: list[str]) -> list[str]:
+        """向每一条聊天记录末尾添加换行符"""
+        return list(map(lambda history: f"{history}\n", chat_history))
+
+    @staticmethod
+    def __merge_user_and_chat_history(chat_history: list[str]) -> list[str]:
+        """合并用户名，发言时间和发言内容"""
+        result = []
+
+        for i in range(0, len(chat_history), 2):
+            result.append(f"{chat_history[i]}: {chat_history[i + 1]}")
+
+        return result
+
+    @staticmethod
+    def filter(strings: list[str]) -> list[str]:
+        return Filter.__add_new_line(Filter.__merge_independ_time_info(Filter.__remove_empty(strings)))
 
 
 if __name__ == "__main__":
     with open(OUTPUT_FILE, "w") as output:
-        output.writelines(ocr(get_screenshot_dir_file_list(SCREENSHOT_DIR_PATH)))
+        output.writelines(
+            Filter.filter(ocr(get_screenshot_dir_file_list(SCREENSHOT_DIR_PATH)))
+        )
