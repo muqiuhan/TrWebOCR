@@ -80,6 +80,14 @@ def ocr(img_file_paths: list[str]) -> list[str]:
 
 class Filter:
     """对OCR的结果进行微调"""
+    
+    @staticmethod
+    def __is_time_info(history: str) -> bool:
+        matched = re.search(r"\d{2}:\d{2}", history)
+        if matched and matched.group() == history:
+            return True
+        else:
+            return False
 
     @staticmethod
     def __merge_independ_time_info(chat_history: list[str]) -> list[str]:
@@ -88,8 +96,7 @@ class Filter:
         previous_string = ""
 
         for history in chat_history:
-            matched = re.search(r"\d{2}:\d{2}", history)
-            if matched and matched.group() == history:
+            if Filter.__is_time_info(history):
                 previous_string = f"{previous_string}{history}"
             else:
                 merged_strings.append(previous_string)
@@ -109,18 +116,23 @@ class Filter:
         return list(map(lambda history: f"{history}\n", chat_history))
 
     @staticmethod
-    def __merge_user_and_chat_history(chat_history: list[str]) -> list[str]:
-        """合并用户名，发言时间和发言内容"""
-        result = []
+    def __normalize_speaker_info(chat_history: list[str]) -> list[str]:
+        def replace(history: str) -> str:
+            matched = re.search(r"\d{2}:\d{2}", history)
+            if matched:
+                return f"o- {history[(matched.start()):]} {history[:(matched.start())]}"
+            else:
+                return f"| {history}"
 
-        for i in range(0, len(chat_history), 2):
-            result.append(f"{chat_history[i]}: {chat_history[i + 1]}")
-
-        return result
+        return list(map(replace, chat_history))
 
     @staticmethod
     def filter(strings: list[str]) -> list[str]:
-        return Filter.__add_new_line(Filter.__merge_independ_time_info(Filter.__remove_empty(strings)))
+        return Filter.__add_new_line(
+            Filter.__normalize_speaker_info(
+                Filter.__merge_independ_time_info(Filter.__remove_empty(strings))
+            )
+        )
 
 
 if __name__ == "__main__":
