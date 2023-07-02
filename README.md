@@ -1,14 +1,49 @@
-# TrWebOCR-开源的离线OCR  
+# ∞-type Café 暑期学校会议聊天记录OCR识别工具
+> 本项目基于[TrWebOCR](https://github.com/alisen39/TrWebOCR)
 
-## 用于 ∞-type Café 暑期学校的会议室聊天记录识别
-> 本项目只做了一层wrapper，用于支持批量对图片进行OCR，目前并未修改 [TrWebOCR](https://github.com/alisen39/TrWebOCR) 的源码。
+## 效果
 
-## 介绍
-TrWebOCR，基于开源项目 [Tr](https://github.com/myhub/tr) 构建。  
-在其基础上提供了http调用的接口，便于你在其他的项目中调用。  
-并且提供了易于使用的web页面，便于调试或日常使用。   
+例如如下聊天记录截图:
 
-## 构建与运行
+![./test.jpg](./test.jpg)
+
+可以生成[./demo.txt](./demo.txt):
+```
+| 
+o- 16:31 114514 
+| 模型包含了那个解释的过程,和解释的目标
+o- 16:32 114514 
+| 其它是对的,我觉得理解基本正确
+o- 16:32 ezra
+| 嗯嗯好的,我再理解下
+o- 16:32 Y2
+| 这个stlc能不能定义递归函数之类的东西啊,还是要加入
+| 不动点mu的构造
+o- 16:33 114514 
+| 你可以加,但加了之后它就不再适合作为逻辑语言,只能用
+| 来做编程语言
+o- 16:33 面皮
+| 用elim_Nat
+| 来构造,可以做原始递归(
+o- 16:34 启源
+| 这个elim
+| 是primary recursion吗
+o- 16:34 Y2
+| 懂了,谢谢
+o- 16:34 面皮
+| 印象中是的
+o- 16:35 oCaU
+| elim跟recursion是有点像,但我也解释不好
+o- 16:36 启源
+| WOW
+```
+
+## 使用
+```
+python3 main.py [screenshot_dir] [output_txt]
+```
+
+## 构建 || 运行
 
 基于Python 3.6+， 经测试支持在以下平台运行:
 - Ubuntu 16.04
