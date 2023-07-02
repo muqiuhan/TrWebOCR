@@ -4,6 +4,7 @@ import sys
 
 URL = "http://localhost:8089/api/tr-run/"
 SCREENSHOT_DIR_PATH = sys.argv[1]
+OUTPUT_FILE = sys.argv[2]
 
 
 def get_screenshot_dir_file_list(screenshot_dir_path: str) -> list[str]:
@@ -15,22 +16,25 @@ def get_screenshot_dir_file_list(screenshot_dir_path: str) -> list[str]:
     Returns:
         list[str]: 所有聊天记录的截图
     """
-    return [
-        img_file
-        for img_file in os.listdir(screenshot_dir_path)
-        if os.path.isfile(os.path.join(screenshot_dir_path, img_file))
-        and img_file.split(".")[-1] in ["jpg", "png", "jpeg"]
-    ]
+    return sorted(
+        # 由于截图文件名一般带有截图日期，所以在这里做一次排序，保证进行识别的的顺序合理
+        [
+            img_file
+            for img_file in os.listdir(screenshot_dir_path)
+            if os.path.isfile(os.path.join(screenshot_dir_path, img_file))
+            and img_file.split(".")[-1] in ["jpg", "png", "jpeg"]
+        ]
+    )
 
 
-def request_TrWebOCR(img_file_path: str) -> str:
+def request_TrWebOCR(img_file_path: str) -> list[str]:
     """调用TrWebOCR识别一张截图文件并获取有效的返回结果
 
     Args:
         img_file_path (str): 截图文件的路径
 
     Returns:
-        str: TrWebOCR的返回结果有如下形式：
+        list[str]: TrWebOCR的返回结果有如下形式：
             {"code": 200,
              "msg": "\u6210\u529f",
              "data": {
@@ -39,10 +43,18 @@ def request_TrWebOCR(img_file_path: str) -> str:
                 "speed_time": 0.67}}
         而我们只需要raw_out的第一项， 即识别的文字结果
     """
+    raws = []
+
     try:
-        return requests.post(
+        raw_outs = requests.post(
             url=URL, data={"compress": 1600}, files={"file": open(img_file_path, "rb")}
-        ).json()["data"]["raw_out"][1]
+        ).json()["data"]["raw_out"]
+
+        for raw in raw_outs:
+            raws.append(raw[1])
+
+        return raws
+
     except KeyError:
         print(f"截图{img_file_path}识别失败，重试...")
         request_TrWebOCR(img_file_path)
@@ -62,8 +74,9 @@ def ocr(img_file_paths: list[str]) -> list[str]:
     for img_file_path in img_file_paths:
         result.append(request_TrWebOCR(img_file_path))
 
-    return result
+    return map(lambda s: f"{s}\n", result[0])
 
 
 if __name__ == "__main__":
-    print(ocr(get_screenshot_dir_file_list(SCREENSHOT_DIR_PATH)))
+    with open(OUTPUT_FILE, "w") as output:
+        output.writelines(ocr(get_screenshot_dir_file_list(SCREENSHOT_DIR_PATH)))
